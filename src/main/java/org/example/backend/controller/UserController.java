@@ -1,6 +1,8 @@
 package org.example.backend.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.example.backend.annotation.AuthCheck;
 import org.example.backend.common.BaseResponse;
 import org.example.backend.common.DeleteRequest;
@@ -9,36 +11,19 @@ import org.example.backend.common.ResultUtils;
 import org.example.backend.constant.UserConstant;
 import org.example.backend.exception.BusinessException;
 import org.example.backend.exception.ThrowUtils;
-import org.example.backend.model.dto.user.UserAddRequest;
-import org.example.backend.model.dto.user.UserLoginRequest;
-import org.example.backend.model.dto.user.UserQueryRequest;
-import org.example.backend.model.dto.user.UserRegisterRequest;
-import org.example.backend.model.dto.user.UserUpdateMyRequest;
-import org.example.backend.model.dto.user.UserUpdateRequest;
+import org.example.backend.model.dto.user.*;
 import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.LoginUserVO;
 import org.example.backend.model.vo.UserVO;
 import org.example.backend.service.UserService;
-
-import java.util.List;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
-import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
-import me.chanjar.weixin.mp.api.WxMpService;
-import org.apache.commons.lang3.StringUtils;
 import org.example.backend.service.impl.UserServiceImpl;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 用户接口
