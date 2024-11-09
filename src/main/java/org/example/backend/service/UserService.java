@@ -6,9 +6,9 @@ import org.example.backend.model.dto.user.UserQueryRequest;
 import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.LoginUserVO;
 import org.example.backend.model.vo.UserVO;
-import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
+import java.util.List;
 
 /**
  * 用户服务
