@@ -207,6 +207,19 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         // 检查题库id
         QuestionnaireBank questionBank = questionnaireBankService.getById(questionBankId);
         ThrowUtils.throwIf(questionBank == null, ErrorCode.PARAMS_ERROR);
+
+        // 检查题目是否已经在题库中了
+        LambdaQueryWrapper<QuestionBankQuestion> lambdaQueryWrapper = Wrappers.lambdaQuery(QuestionBankQuestion.class)
+                .eq(QuestionBankQuestion::getQuestionBankId, questionBankId)
+                .in(QuestionBankQuestion::getQuestionId, validQuestionIdList);
+        List<QuestionBankQuestion> existQuestionList = this.list(lambdaQueryWrapper);
+        Set<Long> existQuestionIdSet = existQuestionList.stream()
+                .map(QuestionBankQuestion::getQuestionId)
+                .collect(Collectors.toSet());
+        validQuestionIdList = validQuestionIdList.stream().filter(questionId -> {
+            return !existQuestionIdSet.contains(questionId);
+        }).collect(Collectors.toList());
+        ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList), ErrorCode.PARAMS_ERROR, "所有题目已经存在");
         //执行插入
         for(Long questionId : validQuestionIdList) {
             QuestionBankQuestion questionBankQuestion = new QuestionBankQuestion();
