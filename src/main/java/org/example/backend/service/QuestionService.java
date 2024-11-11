@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.example.backend.model.dto.question.QuestionQueryRequest;
 import org.example.backend.model.entity.Question;
+import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.QuestionVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 问题服务
@@ -48,5 +50,18 @@ public interface QuestionService extends IService<Question> {
      */
     Page<QuestionVO> getQuestionVOPage(Page<Question> questionPage, HttpServletRequest request);
 
+    /**
+     * 分页获取题库中关联的题目
+     * @param questionQueryRequest
+     * @return
+     */
     Page<Question> listQuestionByPage(QuestionQueryRequest questionQueryRequest);
+
+    /**
+     * 从ES中查询题目
+     */
+    Page<Question> searchFromEs(QuestionQueryRequest questionQueryRequest);
+
+    void batchDeleteQuestions(List<Long> questionIdList);
+
 }

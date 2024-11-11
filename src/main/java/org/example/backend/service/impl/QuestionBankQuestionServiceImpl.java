@@ -1,13 +1,16 @@
 package org.example.backend.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.example.backend.common.ErrorCode;
 import org.example.backend.constant.CommonConstant;
+import org.example.backend.exception.BusinessException;
 import org.example.backend.exception.ThrowUtils;
 import org.example.backend.mapper.QuestionBankQuestionMapper;
 import org.example.backend.model.dto.questionBankQuestion.QuestionBankQuestionQueryRequest;
@@ -26,6 +29,7 @@ import org.example.backend.service.UserService;
 import org.example.backend.utils.SqlUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -187,6 +191,49 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
 
         questionBankQuestionVOPage.setRecords(questionBankQuestionVOList);
         return questionBankQuestionVOPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchAddQuestionsToBank(List<Long> questionIdList, Long questionBankId, User loginUser) {
+        ThrowUtils.throwIf(CollUtil.isEmpty(questionIdList), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(questionBankId == null || questionBankId <= 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.PARAMS_ERROR);
+
+        List<Question> questionList = questionService.listByIds(questionIdList);
+        // 合法的题目Id
+        List<Long> validQuestionIdList = questionList.stream().map(Question::getId).collect(Collectors.toList());
+        ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList),ErrorCode.PARAMS_ERROR);
+        // 检查题库id
+        QuestionnaireBank questionBank = questionnaireBankService.getById(questionBankId);
+        ThrowUtils.throwIf(questionBank == null, ErrorCode.PARAMS_ERROR);
+        //执行插入
+        for(Long questionId : validQuestionIdList) {
+            QuestionBankQuestion questionBankQuestion = new QuestionBankQuestion();
+            questionBankQuestion.setQuestionBankId(questionBankId);
+            questionBankQuestion.setQuestionId(questionId);
+            questionBankQuestion.setUserId(loginUser.getId());
+            boolean result = this.save(questionBankQuestion);
+            if(!result) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "添加题目失败");
+            }
+        }
+    }
+
+    @Override
+    public void batchRemoveQuestionsFromBank(List<Long> questionIdList, Long questionBankId) {
+        ThrowUtils.throwIf(CollUtil.isEmpty(questionIdList), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(questionBankId == null || questionBankId <= 0, ErrorCode.PARAMS_ERROR);
+        for (Long questionId : questionIdList) {
+            //构造查询
+            LambdaQueryWrapper<QuestionBankQuestion> lambdaQueryWrapper = Wrappers.lambdaQuery(QuestionBankQuestion.class)
+                    .eq(QuestionBankQuestion::getQuestionId, questionId)
+                    .eq(QuestionBankQuestion::getQuestionBankId, questionBankId);
+            boolean result = this.remove(lambdaQueryWrapper);
+            if(!result) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "移除题目失败");
+            }
+        }
     }
 
 }

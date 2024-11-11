@@ -11,13 +11,12 @@ import org.example.backend.common.ResultUtils;
 import org.example.backend.constant.UserConstant;
 import org.example.backend.exception.BusinessException;
 import org.example.backend.exception.ThrowUtils;
-import org.example.backend.model.dto.question.QuestionAddRequest;
-import org.example.backend.model.dto.question.QuestionEditRequest;
-import org.example.backend.model.dto.question.QuestionQueryRequest;
-import org.example.backend.model.dto.question.QuestionUpdateRequest;
+import org.example.backend.model.dto.question.*;
+import org.example.backend.model.dto.questionBankQuestion.QuestionBankQuestionBatchAddRequest;
 import org.example.backend.model.entity.Question;
 import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.QuestionVO;
+import org.example.backend.service.QuestionBankQuestionService;
 import org.example.backend.service.QuestionService;
 import org.example.backend.service.UserService;
 import org.springframework.beans.BeanUtils;
@@ -26,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 问题接口
@@ -40,6 +40,9 @@ public class QuestionController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private QuestionBankQuestionService questionBankQuestionService;
 
     // region 增删改查
 
@@ -234,6 +237,29 @@ public class QuestionController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
     }
+
+    @PostMapping("/search/page/vo")
+    public BaseResponse<Page<QuestionVO>> searchQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
+                                                                 HttpServletRequest request) {
+        long size = questionQueryRequest.getPageSize();
+        // 限制爬虫
+        ThrowUtils.throwIf(size > 200, ErrorCode.PARAMS_ERROR);
+        Page<Question> questionPage = questionService.searchFromEs(questionQueryRequest);
+        return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
+    }
+
+
+
+    @PostMapping("/delete/batch")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> batchDeleteQuestions(@RequestBody QuestionBatchRemoveRequest questionBatchRemoveRequest, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(questionBatchRemoveRequest == null, ErrorCode.PARAMS_ERROR);
+        questionService.batchDeleteQuestions(questionBatchRemoveRequest.getQuestionIdList());
+        return ResultUtils.success(true);
+    }
+
+
+
 
     // endregion
 }

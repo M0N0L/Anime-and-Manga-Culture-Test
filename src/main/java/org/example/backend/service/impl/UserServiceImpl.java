@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.example.backend.common.ErrorCode;
 import org.example.backend.constant.CommonConstant;
+import org.example.backend.constant.RedisConstant;
 import org.example.backend.exception.BusinessException;
 import org.example.backend.mapper.UserMapper;
 import org.example.backend.model.dto.user.UserQueryRequest;
@@ -16,13 +17,17 @@ import org.example.backend.model.vo.LoginUserVO;
 import org.example.backend.model.vo.UserVO;
 import org.example.backend.service.UserService;
 import org.example.backend.utils.SqlUtils;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.Year;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.example.backend.constant.UserConstant.USER_LOGIN_STATE;
@@ -38,6 +43,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 盐值，混淆密码
      */
     public static final String SALT = "MONO";
+
+    @Resource
+    RedissonClient redissonClient;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -234,5 +242,46 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
+    }
+
+    @Override
+    public boolean addUserSignIn(long userId) {
+        LocalDate date = LocalDate.now();
+        String key = RedisConstant.getUserSignInRedisKey(date.getYear(), userId);
+        RBitSet signInBitSet = redissonClient.getBitSet(key);
+        // 获取当前日期是一年中的第几天，作为偏移量（从 1 开始计数）
+        int offset = date.getDayOfYear();
+        // 检查当天是否已经签到
+        if (!signInBitSet.get(offset)) {
+            // 如果当天还未签到，则设置
+            return signInBitSet.set(offset, true);
+        }
+        // 当天已签到
+        return true;
+    }
+
+    @Override
+    public List<Integer> getUserSignInRecord(long userId, Integer year) {
+        if (year == null) {
+            LocalDate date = LocalDate.now();
+            year = date.getYear();
+        }
+        String key = RedisConstant.getUserSignInRedisKey(year, userId);
+        RBitSet signInBitSet = redissonClient.getBitSet(key);
+        // LinkedHashMap 保证有序
+        List<Integer> dayList = new ArrayList<>();
+        // 获取当前年份的总天数
+        int totalDays = Year.of(year).length();
+        BitSet bitSet = signInBitSet.asBitSet();
+
+
+        // 依次获取每一天的签到状态
+        int index = bitSet.nextSetBit(0);
+        while (index >= 0) {
+            dayList.add(index);
+            // 查找下一个被设置为 1 的位
+            index = bitSet.nextSetBit(index + 1);
+        }
+        return dayList;
     }
 }
