@@ -8,8 +8,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.example.backend.annotation.AuthCheck;
+import org.example.backend.annotation.DistributedLock;
 import org.example.backend.common.ErrorCode;
 import org.example.backend.constant.CommonConstant;
+import org.example.backend.constant.UserConstant;
 import org.example.backend.exception.BusinessException;
 import org.example.backend.exception.ThrowUtils;
 import org.example.backend.mapper.QuestionBankQuestionMapper;
@@ -36,9 +39,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -221,12 +229,16 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
 
     /**
      * 向问卷中批量添加问题
+     * 使用分布式锁，防止多个管理员同时添加出现问题
+     *
      * @param questionIdList
      * @param questionBankId
      * @param loginUser
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @DistributedLock(key = "addQuestionLock", leaseTime = 20000, waitTime = 5000)
     public void batchAddQuestionsToBank(List<Long> questionIdList, Long questionBankId, User loginUser) {
         ThrowUtils.throwIf(CollUtil.isEmpty(questionIdList), ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(questionBankId == null || questionBankId <= 0, ErrorCode.PARAMS_ERROR);
@@ -250,10 +262,25 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
                 .collect(Collectors.toSet());
         validQuestionIdList = validQuestionIdList.stream().filter(questionId -> !existQuestionIdSet.contains(questionId)).collect(Collectors.toList());
         ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList), ErrorCode.PARAMS_ERROR, "所有题目已经存在");
+
+        // 批量处理任务并发执行
+        ThreadPoolExecutor customExecutor = new ThreadPoolExecutor(
+                4, //核心线程数
+                10, //最大线程数
+                60L, // 线程空闲存活时间
+                TimeUnit.SECONDS, //存活单位
+                new LinkedBlockingQueue<>(1000),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+
+        // 用于保存所有批次的 CompletableFuture
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+
         //执行插入
         int batchSize = 1000;
         int totalSize = validQuestionIdList.size();
-        for(int i = 0; i < totalSize; i += batchSize) {
+        for (int i = 0; i < totalSize; i += batchSize) {
             List<Long> subList = validQuestionIdList.subList(i, Math.min(i + batchSize, totalSize));
             List<QuestionBankQuestion> questionBankQuestions = subList.stream()
                     .map(questionId -> {
@@ -265,8 +292,20 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
                     }).collect(Collectors.toList());
             // 使用事务处理数据
             QuestionBankQuestionService questionBankQuestionService = (QuestionBankQuestionServiceImpl) AopContext.currentProxy();
-            questionBankQuestionService.batchAddQuestionToBankInner(questionBankQuestions);
+            // 异步处理每批数据并添加到 futures 列表
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                questionBankQuestionService.batchAddQuestionToBankInner(questionBankQuestions);
+            }, customExecutor).exceptionally(ex -> {
+                log.error("批处理任务执行失败", ex);
+                return null;
+            });
+            futures.add(future);
         }
+        // 等待所有批次操作完成
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        // 关闭线程池
+        customExecutor.shutdown();
     }
 
     @Override
