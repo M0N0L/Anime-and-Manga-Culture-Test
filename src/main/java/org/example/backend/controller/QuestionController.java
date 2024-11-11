@@ -249,7 +249,6 @@ public class QuestionController {
     }
 
 
-
     @PostMapping("/delete/batch")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> batchDeleteQuestions(@RequestBody QuestionBatchRemoveRequest questionBatchRemoveRequest, HttpServletRequest httpServletRequest) {
@@ -257,8 +256,6 @@ public class QuestionController {
         questionService.batchDeleteQuestions(questionBatchRemoveRequest.getQuestionIdList());
         return ResultUtils.success(true);
     }
-
-
 
 
     // endregion

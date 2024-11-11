@@ -21,11 +21,12 @@ public class FullSyncQuestionToEs implements CommandLineRunner {
 
     @Resource
     private QuestionEsDAO questionEsDAO;
+
     @Override
     public void run(String... args) throws Exception {
         // 全量获取题目
         List<Question> questionList = questionService.list();
-        if(CollUtil.isEmpty(questionList)) {
+        if (CollUtil.isEmpty(questionList)) {
             return;
         }
         // 转为ES
@@ -38,7 +39,7 @@ public class FullSyncQuestionToEs implements CommandLineRunner {
         int total = questionEsDTOList.size();
         log.info("FullSyncQuestionToES start, total {}", total);
 
-        for(int i = 0; i < total; i += pageSize) {
+        for (int i = 0; i < total; i += pageSize) {
             int end = Math.min(i + pageSize, total);
             log.info("sync from {} to {}", i, end);
             questionEsDAO.saveAll(questionEsDTOList.subList(i, end));

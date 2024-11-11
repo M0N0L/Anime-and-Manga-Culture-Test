@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 
 /**
  * 问卷库服务
- *
  */
 public interface QuestionnaireBankService extends IService<QuestionnaireBank> {
 
@@ -19,7 +18,7 @@ public interface QuestionnaireBankService extends IService<QuestionnaireBank> {
      * 校验数据
      *
      * @param questionnaireBank
-     * @param add 对创建的数据进行校验
+     * @param add               对创建的数据进行校验
      */
     void validQuestionnaireBank(QuestionnaireBank questionnaireBank, boolean add);
 
@@ -48,7 +47,6 @@ public interface QuestionnaireBankService extends IService<QuestionnaireBank> {
      * @return
      */
     Page<QuestionnaireBankVO> getQuestionnaireBankVOPage(Page<QuestionnaireBank> questionnaireBankPage, HttpServletRequest request);
-
 
 
 }

@@ -58,6 +58,7 @@ public class QuestionBankQuestionController {
         User loginUser = userService.getLoginUser(request);
         questionBankQuestion.setUserId(loginUser.getId());
         // 写入数据库
+
         boolean result = questionBankQuestionService.save(questionBankQuestion);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         // 返回新写入的数据 id
@@ -161,7 +162,7 @@ public class QuestionBankQuestionController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<QuestionBankQuestionVO>> listQuestionBankQuestionVOByPage(@RequestBody QuestionBankQuestionQueryRequest questionBankQuestionQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                                       HttpServletRequest request) {
         long current = questionBankQuestionQueryRequest.getCurrent();
         long size = questionBankQuestionQueryRequest.getPageSize();
         // 限制爬虫
@@ -182,7 +183,7 @@ public class QuestionBankQuestionController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<QuestionBankQuestionVO>> listMyQuestionBankQuestionVOByPage(@RequestBody QuestionBankQuestionQueryRequest questionBankQuestionQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                                         HttpServletRequest request) {
         ThrowUtils.throwIf(questionBankQuestionQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
@@ -250,6 +251,7 @@ public class QuestionBankQuestionController {
 
     /**
      * 批量添加题目
+     *
      * @param questionBankQuestionBatchAddRequest
      * @param request
      * @return
@@ -270,13 +272,12 @@ public class QuestionBankQuestionController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> batchDeleteQuestionsFromBank(@RequestBody QuestionBankQuestionBatchRemoveRequest questionBatchRemoveRequest,
                                                               HttpServletRequest httpServletRequest) {
-        ThrowUtils.throwIf(questionBatchRemoveRequest == null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(questionBatchRemoveRequest == null, ErrorCode.PARAMS_ERROR);
         Long questionBankId = questionBatchRemoveRequest.getQuestionBankId();
         List<Long> questionIdList = questionBatchRemoveRequest.getQuestionIdList();
         questionBankQuestionService.batchRemoveQuestionsFromBank(questionIdList, questionBankId);
         return ResultUtils.success(true);
     }
-
 
 
     // endregion

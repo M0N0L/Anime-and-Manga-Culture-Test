@@ -11,9 +11,10 @@ import java.util.Date;
 
 /**
  * 问卷含有题目表
+ *
  * @TableName question_bank_question
  */
-@TableName(value ="question_bank_question")
+@TableName(value = "question_bank_question")
 @Data
 public class QuestionBankQuestion implements Serializable {
     /**

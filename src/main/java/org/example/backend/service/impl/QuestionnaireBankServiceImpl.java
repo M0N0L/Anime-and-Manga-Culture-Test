@@ -49,7 +49,7 @@ public class QuestionnaireBankServiceImpl extends ServiceImpl<QuestionnaireBankM
      * 校验数据
      *
      * @param questionnaireBank
-     * @param add      对创建的数据进行校验
+     * @param add               对创建的数据进行校验
      */
     @Override
     public void validQuestionnaireBank(QuestionnaireBank questionnaireBank, boolean add) {
@@ -105,7 +105,7 @@ public class QuestionnaireBankServiceImpl extends ServiceImpl<QuestionnaireBankM
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
 
         // 排序规则
-        if(StringUtils.isNotBlank(sortField)) {
+        if (StringUtils.isNotBlank(sortField)) {
             queryWrapper.orderBy(SqlUtils.validSortField(sortField),
                     sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                     sortField);
@@ -172,7 +172,6 @@ public class QuestionnaireBankServiceImpl extends ServiceImpl<QuestionnaireBankM
         questionnaireBankVOPage.setRecords(questionnaireBankVOList);
         return questionnaireBankVOPage;
     }
-
 
 
 }

@@ -303,19 +303,19 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void batchDeleteQuestions(List<Long> questionIdList) {
-        if(CollUtil.isEmpty(questionIdList)) {
+        if (CollUtil.isEmpty(questionIdList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        for(Long questionId : questionIdList) {
+        for (Long questionId : questionIdList) {
             boolean result = this.removeById(questionId);
-            if(!result) {
+            if (!result) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "批量删除题目失败");
             }
             // 移除题目关系
             LambdaQueryWrapper<QuestionBankQuestion> lambdaQueryWrapper = Wrappers.lambdaQuery(QuestionBankQuestion.class)
                     .eq(QuestionBankQuestion::getQuestionId, questionId);
             result = questionBankQuestionService.remove(lambdaQueryWrapper);
-            if(!result) {
+            if (!result) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "移除关联题目失败");
             }
         }

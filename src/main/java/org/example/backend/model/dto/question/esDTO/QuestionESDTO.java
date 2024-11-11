@@ -75,13 +75,13 @@ public class QuestionESDTO {
      * 对象转包装类
      */
     public static QuestionESDTO objToDTO(Question question) {
-        if(question == null) {
+        if (question == null) {
             return null;
         }
         QuestionESDTO questionESDTO = new QuestionESDTO();
         BeanUtils.copyProperties(question, questionESDTO);
         String tagStr = question.getTags();
-        if(StringUtils.isNotBlank(tagStr)) {
+        if (StringUtils.isNotBlank(tagStr)) {
             questionESDTO.setTags(JSONUtil.toList(tagStr, String.class));
         }
         return questionESDTO;
@@ -91,13 +91,13 @@ public class QuestionESDTO {
      * 包装类转对象
      */
     public static Question dtoToObj(QuestionESDTO questionESDTO) {
-        if(questionESDTO == null) {
+        if (questionESDTO == null) {
             return null;
         }
         Question question = new Question();
         BeanUtils.copyProperties(questionESDTO, question);
         List<String> tagList = questionESDTO.getTags();
-        if(CollUtil.isNotEmpty(tagList)) {
+        if (CollUtil.isNotEmpty(tagList)) {
             question.setTags(JSONUtil.toJsonStr(tagList));
         }
         return question;

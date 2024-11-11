@@ -156,7 +156,6 @@ public class QuestionnaireBankController {
     }
 
 
-
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<QuestionnaireBank>> listQuestionnaireBankByPage(@RequestBody QuestionnaireBankQueryRequest questionnaireBankQueryRequest) {
@@ -179,7 +178,7 @@ public class QuestionnaireBankController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<QuestionnaireBankVO>> listQuestionnaireBankVOByPage(@RequestBody QuestionnaireBankQueryRequest questionnaireBankQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                                 HttpServletRequest request) {
         long current = questionnaireBankQueryRequest.getCurrent();
         long size = questionnaireBankQueryRequest.getPageSize();
         // 限制爬虫
@@ -200,7 +199,7 @@ public class QuestionnaireBankController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<QuestionnaireBankVO>> listMyQuestionnaireBankVOByPage(@RequestBody QuestionnaireBankQueryRequest questionnaireBankQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                                   HttpServletRequest request) {
         ThrowUtils.throwIf(questionnaireBankQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);

@@ -2,6 +2,7 @@ package org.example.backend.model.vo;
 
 import java.io.Serializable;
 import java.util.Date;
+
 import lombok.Data;
 
 /**

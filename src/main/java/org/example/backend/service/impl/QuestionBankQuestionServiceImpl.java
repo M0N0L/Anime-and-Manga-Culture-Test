@@ -28,6 +28,8 @@ import org.example.backend.service.QuestionnaireBankService;
 import org.example.backend.service.UserService;
 import org.example.backend.utils.SqlUtils;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,19 +63,19 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
      * 校验数据
      *
      * @param questionBankQuestion
-     * @param add      对创建的数据进行校验
+     * @param add                  对创建的数据进行校验
      */
     @Override
     public void validQuestionBankQuestion(QuestionBankQuestion questionBankQuestion, boolean add) {
         ThrowUtils.throwIf(questionBankQuestion == null, ErrorCode.PARAMS_ERROR);
         Long questionId = questionBankQuestion.getQuestionId();
-        if(questionId != null) {
+        if (questionId != null) {
             Question question = questionService.getById(questionId);
             ThrowUtils.throwIf(question == null, ErrorCode.PARAMS_ERROR, "题目不存在");
         }
 
         Long questionBankId = questionBankQuestion.getQuestionBankId();
-        if(questionBankId != null) {
+        if (questionBankId != null) {
             QuestionnaireBank questionnaire = questionnaireBankService.getById(questionBankId);
             ThrowUtils.throwIf(questionnaire == null, ErrorCode.PARAMS_ERROR, "题目库不存在");
         }
@@ -135,14 +137,14 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         // 2. 关联题目id
         Long questionId = questionBankQuestion.getQuestionId();
         Question question = null;
-        if(questionId != 0 && questionId > 0) {
+        if (questionId != 0 && questionId > 0) {
             question = questionService.getById(questionId);
         }
         QuestionVO questionVO = questionService.getQuestionVO(question, request);
         //3. 关联问卷id
         Long questionBankId = questionBankQuestion.getQuestionBankId();
         QuestionnaireBank questionnaireBank = null;
-        if(questionBankId != 0 && questionBankId > 0) {
+        if (questionBankId != 0 && questionBankId > 0) {
             questionnaireBank = questionnaireBankService.getById(questionBankId);
         }
         QuestionnaireBankVO questionnaireBankVO = questionnaireBankService.getQuestionnaireBankVO(questionnaireBank, request);
@@ -203,7 +205,7 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         List<Question> questionList = questionService.listByIds(questionIdList);
         // 合法的题目Id
         List<Long> validQuestionIdList = questionList.stream().map(Question::getId).collect(Collectors.toList());
-        ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList),ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList), ErrorCode.PARAMS_ERROR);
         // 检查题库id
         QuestionnaireBank questionBank = questionnaireBankService.getById(questionBankId);
         ThrowUtils.throwIf(questionBank == null, ErrorCode.PARAMS_ERROR);
@@ -216,20 +218,35 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         Set<Long> existQuestionIdSet = existQuestionList.stream()
                 .map(QuestionBankQuestion::getQuestionId)
                 .collect(Collectors.toSet());
-        validQuestionIdList = validQuestionIdList.stream().filter(questionId -> {
-            return !existQuestionIdSet.contains(questionId);
-        }).collect(Collectors.toList());
+        validQuestionIdList = validQuestionIdList.stream().filter(questionId -> !existQuestionIdSet.contains(questionId)).collect(Collectors.toList());
         ThrowUtils.throwIf(CollUtil.isEmpty(validQuestionIdList), ErrorCode.PARAMS_ERROR, "所有题目已经存在");
         //执行插入
-        for(Long questionId : validQuestionIdList) {
+        for (Long questionId : validQuestionIdList) {
             QuestionBankQuestion questionBankQuestion = new QuestionBankQuestion();
             questionBankQuestion.setQuestionBankId(questionBankId);
             questionBankQuestion.setQuestionId(questionId);
             questionBankQuestion.setUserId(loginUser.getId());
-            boolean result = this.save(questionBankQuestion);
-            if(!result) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "添加题目失败");
+
+            try {
+                boolean result = this.save(questionBankQuestion);
+                if (!result) {
+                    throw new BusinessException(ErrorCode.OPERATION_ERROR, "向题库添加题目失败");
+                }
+            } catch (DataIntegrityViolationException e) {
+                log.error("数据库唯一键冲突或违反其他完整性约束，题目 id: {}, 题库 id: {}, 错误信息: {}",
+                        questionId, questionBankId, e.getMessage());
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "题目已存在于该题库，无法重复添加");
+            } catch (DataAccessException e) {
+                log.error("数据库连接问题、事务问题等导致操作失败，题目 id: {}, 题库 id: {}, 错误信息: {}",
+                        questionId, questionBankId, e.getMessage());
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "数据库操作失败");
+            } catch (Exception e) {
+                // 捕获其他异常，做通用处理
+                log.error("添加题目到题库时发生未知错误，题目 id: {}, 题库 id: {}, 错误信息: {}",
+                        questionId, questionBankId, e.getMessage());
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "向题库添加题目失败");
             }
+
         }
     }
 
@@ -243,7 +260,7 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
                     .eq(QuestionBankQuestion::getQuestionId, questionId)
                     .eq(QuestionBankQuestion::getQuestionBankId, questionBankId);
             boolean result = this.remove(lambdaQueryWrapper);
-            if(!result) {
+            if (!result) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "移除题目失败");
             }
         }
