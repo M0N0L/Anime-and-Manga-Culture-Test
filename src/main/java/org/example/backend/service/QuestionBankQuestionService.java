@@ -7,6 +7,7 @@ import org.example.backend.model.dto.questionBankQuestion.QuestionBankQuestionQu
 import org.example.backend.model.entity.QuestionBankQuestion;
 import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.QuestionBankQuestionVO;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -49,6 +50,9 @@ public interface QuestionBankQuestionService extends IService<QuestionBankQuesti
      * @return
      */
     Page<QuestionBankQuestionVO> getQuestionBankQuestionVOPage(Page<QuestionBankQuestion> questionBankQuestionPage, HttpServletRequest request);
+
+    @Transactional(rollbackFor = Exception.class)
+    void batchAddQuestionToBankInner(List<QuestionBankQuestion> questionBankQuestions);
 
     /**
      * 向题库中批量添加题目
