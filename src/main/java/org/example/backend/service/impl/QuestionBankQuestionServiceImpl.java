@@ -1,5 +1,6 @@
 package org.example.backend.service.impl;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -237,7 +238,7 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole(UserConstant.ADMIN_ROLE)
     @DistributedLock(key = "addQuestionLock", leaseTime = 20000, waitTime = 5000)
     public void batchAddQuestionsToBank(List<Long> questionIdList, Long questionBankId, User loginUser) {
         ThrowUtils.throwIf(CollUtil.isEmpty(questionIdList), ErrorCode.PARAMS_ERROR);

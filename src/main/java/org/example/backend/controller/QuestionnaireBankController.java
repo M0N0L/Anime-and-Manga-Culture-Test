@@ -1,5 +1,6 @@
 package org.example.backend.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeException;
@@ -66,7 +67,7 @@ public class QuestionnaireBankController {
      * @return
      */
     @PostMapping("/add")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole(UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addQuestionnaireBank(@RequestBody QuestionnaireBankAddRequest questionnaireBankAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(questionnaireBankAddRequest == null, ErrorCode.PARAMS_ERROR);
         QuestionnaireBank questionnaireBank = new QuestionnaireBank();
@@ -92,7 +93,7 @@ public class QuestionnaireBankController {
      * @return
      */
     @PostMapping("/delete")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole(UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteQuestionnaireBank(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -119,7 +120,7 @@ public class QuestionnaireBankController {
      * @return
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole(UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateQuestionnaireBank(@RequestBody QuestionnaireBankUpdateRequest questionnaireBankUpdateRequest) {
         if (questionnaireBankUpdateRequest == null || questionnaireBankUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -163,7 +164,7 @@ public class QuestionnaireBankController {
 
 
     @PostMapping("/list/page")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole(UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<QuestionnaireBank>> listQuestionnaireBankByPage(@RequestBody QuestionnaireBankQueryRequest questionnaireBankQueryRequest) {
         long current = questionnaireBankQueryRequest.getCurrent();
         long size = questionnaireBankQueryRequest.getPageSize();
