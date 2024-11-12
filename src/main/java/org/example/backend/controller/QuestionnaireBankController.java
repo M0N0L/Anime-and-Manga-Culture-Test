@@ -1,5 +1,8 @@
 package org.example.backend.controller;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeException;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.example.backend.annotation.AuthCheck;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 问卷库接口
@@ -49,6 +53,8 @@ public class QuestionnaireBankController {
 
     @Resource
     private QuestionService questionService;
+
+    private Page<QuestionnaireBankVO> cachedPage;
 
     // region 增删改查
 
@@ -177,15 +183,20 @@ public class QuestionnaireBankController {
      * @return
      */
     @PostMapping("/list/page/vo")
+    @SentinelResource(value = "listQuestionnaireBankVOByPage",
+            blockHandler = "handleBlockException",
+            fallback = "handleFallback")
     public BaseResponse<Page<QuestionnaireBankVO>> listQuestionnaireBankVOByPage(@RequestBody QuestionnaireBankQueryRequest questionnaireBankQueryRequest,
                                                                                  HttpServletRequest request) {
         long current = questionnaireBankQueryRequest.getCurrent();
         long size = questionnaireBankQueryRequest.getPageSize();
         // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(size > 30, ErrorCode.PARAMS_ERROR);
         // 查询数据库
         Page<QuestionnaireBank> questionnaireBankPage = questionnaireBankService.page(new Page<>(current, size),
                 questionnaireBankService.getQueryWrapper(questionnaireBankQueryRequest));
+        // 缓存页面
+        cachedPage = questionnaireBankService.getQuestionnaireBankVOPage(questionnaireBankPage, request);
         // 获取封装类
         return ResultUtils.success(questionnaireBankService.getQuestionnaireBankVOPage(questionnaireBankPage, request));
     }
@@ -245,5 +256,29 @@ public class QuestionnaireBankController {
         boolean result = questionnaireBankService.updateById(questionnaireBank);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * listQuestionBankVOByPage 降级操作：直接返回本地数据
+     */
+    public BaseResponse<Page<QuestionnaireBankVO>> handleFallback(@RequestBody QuestionnaireBankQueryRequest questionBankQueryRequest,
+                                                             HttpServletRequest request, Throwable ex) {
+        System.out.println("触发降级操作");
+        // 可以返回本地数据或空数据
+        return ResultUtils.success(cachedPage);
+    }
+
+    /**
+     * listQuestionBankVOByPage 流控操作
+     * 限流：提示“系统压力过大，请耐心等待”
+     */
+    public BaseResponse<Page<QuestionnaireBankVO>> handleBlockException(@RequestBody QuestionnaireBankQueryRequest questionBankQueryRequest,
+                                                                   HttpServletRequest request, BlockException ex) {
+        // 降级操作
+        if (ex instanceof DegradeException) {
+            return handleFallback(questionBankQueryRequest, request, ex);
+        }
+        // 限流操作
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统压力过大，请耐心等待");
     }
 }
