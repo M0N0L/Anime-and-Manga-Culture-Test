@@ -6,12 +6,11 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.csp.sentinel.Entry;
 import com.alibaba.csp.sentinel.EntryType;
 import com.alibaba.csp.sentinel.SphU;
-import com.alibaba.csp.sentinel.Tracer;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeException;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.example.backend.ai.Assistant;
 import lombok.extern.slf4j.Slf4j;
-import org.example.backend.annotation.AuthCheck;
 import org.example.backend.common.BaseResponse;
 import org.example.backend.common.DeleteRequest;
 import org.example.backend.common.ErrorCode;
@@ -21,13 +20,13 @@ import org.example.backend.exception.BusinessException;
 import org.example.backend.exception.ThrowUtils;
 import org.example.backend.manager.CounterManager;
 import org.example.backend.model.dto.question.*;
-import org.example.backend.model.dto.questionBankQuestion.QuestionBankQuestionBatchAddRequest;
 import org.example.backend.model.entity.Question;
 import org.example.backend.model.entity.User;
 import org.example.backend.model.vo.QuestionVO;
 import org.example.backend.service.QuestionBankQuestionService;
 import org.example.backend.service.QuestionService;
 import org.example.backend.service.UserService;
+import org.example.myrpc.proxy.ServiceProxyFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -307,6 +306,26 @@ public class QuestionController {
         ThrowUtils.throwIf(questionBatchRemoveRequest == null, ErrorCode.PARAMS_ERROR);
         questionService.batchDeleteQuestions(questionBatchRemoveRequest.getQuestionIdList());
         return ResultUtils.success(true);
+    }
+
+    @PostMapping("/ai/answer")
+    public BaseResponse<String> getAiAnswer(@RequestBody QuestionAnswerRequest questionAnswerRequest) {
+        // 获取代理
+        Assistant assistant = ServiceProxyFactory.getProxy(Assistant.class);
+        ThrowUtils.throwIf(questionAnswerRequest == null, ErrorCode.PARAMS_ERROR);
+        Question question = questionService.getById(questionAnswerRequest.getId());
+        ThrowUtils.throwIf(question == null, ErrorCode.PARAMS_ERROR);
+        List<String> tags = JSONUtil.toList(question.getTags(), String.class);
+        StringBuilder prompt = new StringBuilder("你是一个精通动漫、游戏的人工智能助手，用户会询问你问题以及问题相关的领域，请你尽可能给出正确的回答。");
+        prompt.append("问题："+question.getTitle()+"\n");
+        prompt.append("涉及的领域：");
+        for(String tag : tags) {
+            prompt.append(tag + " ");
+        }
+        prompt.append("\n");
+        log.info("发送AI请求");
+        String answer = assistant.chat(prompt.toString());
+        return ResultUtils.success(answer);
     }
 
 

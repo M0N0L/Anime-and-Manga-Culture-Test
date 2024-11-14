@@ -1,5 +1,6 @@
 package org.example.backend;
 
+import org.example.myrpc.bootstrap.ConsumerBootStrap;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,6 +21,8 @@ public class MainApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(MainApplication.class, args);
+        // 服务提供者初始化
+        ConsumerBootStrap.init();
     }
 
 }

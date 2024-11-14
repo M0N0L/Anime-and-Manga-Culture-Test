@@ -2,6 +2,7 @@ package org.example.backend.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +28,11 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.example.backend.constant.UserConstant.USER_LOGIN_STATE;
@@ -249,6 +252,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LocalDate date = LocalDate.now();
         String key = RedisConstant.getUserSignInRedisKey(date.getYear(), userId);
         RBitSet signInBitSet = redissonClient.getBitSet(key);
+        // 一年的时间过期
+        if (!signInBitSet.isExists()) {
+            signInBitSet.expire(Duration.ofDays(366));
+        }
         // 获取当前日期是一年中的第几天，作为偏移量（从 1 开始计数）
         int offset = date.getDayOfYear();
         // 检查当天是否已经签到
@@ -268,10 +275,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         String key = RedisConstant.getUserSignInRedisKey(year, userId);
         RBitSet signInBitSet = redissonClient.getBitSet(key);
+
         // LinkedHashMap 保证有序
         List<Integer> dayList = new ArrayList<>();
-        // 获取当前年份的总天数
-        int totalDays = Year.of(year).length();
+
         BitSet bitSet = signInBitSet.asBitSet();
 
 
