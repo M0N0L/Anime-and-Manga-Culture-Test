@@ -24,7 +24,7 @@
 
 6.访问限制： 为限制恶意用户访问，基于 WebFilter + BloomFilter 实现 IP 黑名单拦截，并通过 Nacos 配置中心动态更新黑名单，便于维护。
 
-7.AI集成：通过自己编写的RPC框架(https://github.com/M0N0L/rpc-Framework)与SpringAI项目进行交互，SpringAI将服务注册至Etcd注册中心，答题平台作为消费者使用服务。如果用户对参考答案不满意，可以使用AI功能获得模型反馈的结果，模型基于ZHIPU-FLASH。
+7.AI集成：通过自己编写的RPC框架(https://github.com/M0N0L/rpc-Framework) 与SpringAI项目进行交互，SpringAI将服务注册至Etcd注册中心，答题平台作为消费者使用服务。如果用户对参考答案不满意，可以使用AI功能获得模型反馈的结果，模型基于ZHIPU-FLASH。
 
 8.鉴权： 通过Sa-Token实现鉴权以及同端的冲突检测。
 
