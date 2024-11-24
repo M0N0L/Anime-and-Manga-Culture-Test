@@ -1,6 +1,7 @@
 package org.example.backend.job.once;
 
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 import org.example.backend.esdao.QuestionEsDAO;
 import org.example.backend.model.dto.question.esDTO.QuestionESDTO;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@DS("question")
 public class FullSyncQuestionToEs implements CommandLineRunner {
     @Resource
     private QuestionService questionService;

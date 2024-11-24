@@ -1,6 +1,7 @@
 package org.example.backend.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 /**
  * 问卷库服务实现
  */
+@DS("question")
 @Service
 @Slf4j
 public class QuestionnaireBankServiceImpl extends ServiceImpl<QuestionnaireBankMapper, QuestionnaireBank> implements QuestionnaireBankService {
@@ -42,8 +44,6 @@ public class QuestionnaireBankServiceImpl extends ServiceImpl<QuestionnaireBankM
     @Resource
     private QuestionnaireBankMapper questionnaireBankMapper;
 
-    @Resource
-    private QuestionBankQuestionService questionBankQuestionService;
 
     /**
      * 校验数据
