@@ -50,8 +50,6 @@ public class QuestionController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private QuestionBankQuestionService questionBankQuestionService;
 
     @Resource
     private CounterManager counterManager;
@@ -175,29 +173,9 @@ public class QuestionController {
         return ResultUtils.success(questionPage);
     }
 
-    /**
-     * 分页获取问题列表（封装类）
-     *
-     * @param questionQueryRequest
-     * @param request
-     * @return
-     */
+
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
-                                                               HttpServletRequest request) {
-        long current = questionQueryRequest.getCurrent();
-        long size = questionQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        Page<Question> questionPage = questionService.page(new Page<>(current, size),
-                questionService.getQueryWrapper(questionQueryRequest));
-        // 获取封装类
-        return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
-    }
-
-    @PostMapping("/list/page/vosentinel")
-    public BaseResponse<Page<QuestionVO>> listQuestionVOByPageSentinel(@RequestBody QuestionQueryRequest questionQueryRequest,
                                                                HttpServletRequest request) {
         long current = questionQueryRequest.getCurrent();
         long size = questionQueryRequest.getPageSize();
@@ -207,7 +185,7 @@ public class QuestionController {
         String remoteAddr = request.getRemoteAddr();
         Entry entry = null;
         try  {
-            entry = SphU.entry("listQuestionVOByPageSentinel", EntryType.IN, 1, remoteAddr);
+            entry = SphU.entry("listQuestionVOByPage", EntryType.IN, 1, remoteAddr);
             // 被保护的业务逻辑
             // 查询数据库
             Page<Question> questionPage = questionService.listQuestionByPage(questionQueryRequest);
@@ -225,8 +203,9 @@ public class QuestionController {
                 entry.exit(1, remoteAddr);
             }
         }
-
     }
+
+
 
     public BaseResponse<Page<QuestionVO>> handleFallback(QuestionQueryRequest questionQueryRequest, HttpServletRequest httpServletRequest, Throwable ex) {
         return ResultUtils.success(null);
@@ -300,6 +279,12 @@ public class QuestionController {
     }
 
 
+    /**
+     * 批量删除
+     * @param questionBatchRemoveRequest
+     * @param httpServletRequest
+     * @return
+     */
     @PostMapping("/delete/batch")
     @SaCheckRole(UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> batchDeleteQuestions(@RequestBody QuestionBatchRemoveRequest questionBatchRemoveRequest, HttpServletRequest httpServletRequest) {
@@ -308,6 +293,11 @@ public class QuestionController {
         return ResultUtils.success(true);
     }
 
+    /**
+     * 对默认答案不满意，利用大语言模型获得答案
+     * @param questionAnswerRequest
+     * @return
+     */
     @PostMapping("/ai/answer")
     public BaseResponse<String> getAiAnswer(@RequestBody QuestionAnswerRequest questionAnswerRequest) {
         // 获取代理
@@ -325,6 +315,19 @@ public class QuestionController {
         prompt.append("\n");
         log.info("发送AI请求");
         String answer = assistant.chat(prompt.toString());
+        return ResultUtils.success(answer);
+    }
+
+    @PostMapping("/ai/question")
+    public BaseResponse<String> getAiQuestion(@RequestBody QuestionGenerateRequest questionGenerateRequest) {
+        // 获取代理
+        Assistant assistant = ServiceProxyFactory.getProxy(Assistant.class);
+        ThrowUtils.throwIf(questionGenerateRequest == null, ErrorCode.PARAMS_ERROR);
+
+        String prompt = "你是一个精通动漫、游戏的人工智能助手，用户会给你一个动漫的名称以及一些相关的标签，请你按照这些信息生成一个与该动漫以及标签相关的问题，并且给出推荐的答案。按照问题：答案: 标签: 的格式返回，标签与用户输入完全一致，并且是列表格式" + "用户输入的主题：" + questionGenerateRequest.getTheme() + "\n" +
+                "用户输入的标签：" + JSONUtil.toJsonStr(questionGenerateRequest.getTags());
+        log.info("发送AI请求");
+        String answer = assistant.chat(prompt);
         return ResultUtils.success(answer);
     }
 

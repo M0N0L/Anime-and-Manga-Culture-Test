@@ -21,7 +21,7 @@ public class SentinelRulesManager {
 
     //限流规则
     public void initFlowRules() {
-        ParamFlowRule rule = new ParamFlowRule("listQuestionVOByPageSentinel")
+        ParamFlowRule rule = new ParamFlowRule("listQuestionVOByPage")
                 .setParamIdx(0) //对第0个参数限流
                 .setCount(50) // 一分钟不超过50次
                 .setDurationInSec(10);
@@ -31,14 +31,14 @@ public class SentinelRulesManager {
     // 降级规则
     public void initDegradeRules() {
         //添加熔断规则
-        DegradeRule slowCallRule = new DegradeRule("listQuestionVOByPageSentinel")
+        DegradeRule slowCallRule = new DegradeRule("listQuestionVOByPage")
                 .setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType())
                 .setCount(0.2)
                 .setTimeWindow(20)
                 .setStatIntervalMs(30 * 1000)
                 .setMinRequestAmount(10)
                 .setSlowRatioThreshold(3);
-        DegradeRule errorRateRule = new DegradeRule("listQuestionVOByPageSentinel")
+        DegradeRule errorRateRule = new DegradeRule("listQuestionVOByPage")
                 .setGrade(CircuitBreakerStrategy.ERROR_RATIO.getType())
                 .setCount(0.1)
                 .setTimeWindow((60))
